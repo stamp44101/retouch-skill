@@ -6,7 +6,7 @@ version: 0.1
 
 # Retouch skill — v0.1
 
-> **v0.1:** tested on 4 sets: Gold Clara × Claire, Pink Clara × Kristy, Camo Lunar × Claire and Blush Iva Mini Dress × Kristy, 5 angles each. See "Known gaps" before trusting a run without looking at it.
+> **v0.1:** tested on 5 sets: Gold Clara × Claire, Pink Clara × Kristy, Camo Lunar × Claire, Blush Iva Mini Dress × Kristy and Sienna Maxi Dress × Claire, 5 angles each. See "Known gaps" before trusting a run without looking at it.
 
 Pipeline: preflight → intake → **Checkpoint 1 RETOUCH** → QA → **Checkpoint 2 BG SWAP** → measure → fallbacks (only when needed) → deliver to folders.
 Everything needed is in this file; the scripts are in the appendix. Reply in the user's language (casual Thai by default) with English technical terms. Show images, keep text short.
@@ -124,7 +124,8 @@ Rerun only that angle, with Image 2 = a crop of the sheet's top-left close-up fa
 Cut-out or very short garments can be blocked. Seen on Blush Iva Mini Dress (midriff cut-out): 4 of 5 angles blocked on the first run.
 1. Retry `gpt_image_2` (same inputs). Some angles pass on a retry.
 2. Try `gpt_image_2_6` (role `image_references`, same prompt).
-3. Still blocked: ask the user for another frame of the same angle from the shoot. On Blush, Front-Full 220 was blocked 6 times; frame 224 (hands behind the back) passed on the first try.
+3. Still blocked: ask the user for another frame of the same angle. If the user gives several Front-Full options up front, run them all in the first batch and keep the best (Sienna: 3 options, 3 passed, kept the straight front).
+4. (old) Still blocked: ask the user for another frame of the same angle from the shoot. On Blush, Front-Full 220 was blocked 6 times; frame 224 (hands behind the back) passed on the first try.
 - **Never use `nano_banana_pro` (Gemini) for RETOUCH.** It passes the filter but does not reshape the body, so it fails QA item 3.
 - Don't move on to the BG step until all 5 angles have a GPT retouch that passes QA.
 
@@ -187,7 +188,7 @@ Run `measure.py bgswap.png BG_Ref.png` on every output. It prints the wall colou
 - Keep the raw output of any fixed image in `99_Test/bg-raw`.
 - Add a row to the log: set, angle, wall, seam, fix.
 
-So far, over 4 sets and 20 images: A was needed on 8, B on 2, and a rerun on 1, so expect both to come up in most sets.
+So far, over 5 sets and 25 images: A was needed on 10, B on 2, and a rerun on 1, so expect both to come up in most sets.
 
 ## Deliver
 ```
@@ -203,6 +204,7 @@ End with one line per angle (pass, or what was fixed) and the credits used.
 ## Known gaps (v0.1)
 - Not tested yet on dark or saturated garments. Long trousers (Camo) passed RETOUCH and BG SWAP; auto-crop wasn't needed there, because that Close-up was a manual faceless crop.
 - `bgmatch.py` and `floorline.py` only work on a flat studio backdrop of two colours, like BG_Ref.
+- `autocrop.py` failed on dark olive satin too (Sienna: no fabric found). For the faceless Close-up, a hand crop is now the norm: put the top at the lips, keep the full height down, centre a 2:3 width. Sienna: lips at 15.0% of the height.
 - `autocrop.py` failed on Blush satin pink (gave a 212x319 crop). That Close-up was cropped by hand: top at 12.2% of the height, full height down to the bottom, 2:3 width centred.
 - Face and body QA still need human eyes.
 - The scripts are separate, not one runner yet.
