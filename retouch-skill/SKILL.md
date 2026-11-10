@@ -125,7 +125,7 @@ Cut-out or very short garments can be blocked. Seen on Blush Iva Mini Dress (mid
 1. Retry `gpt_image_2` (same inputs). Some angles pass on a retry.
 2. Try `gpt_image_2_6` (role `image_references`, same prompt).
 3. Still blocked: ask the user for another frame of the same angle. If the user gives several Front-Full options up front, run them all in the first batch and keep the best (Sienna: 3 options, 3 passed, kept the straight front).
-4. (old) Still blocked: ask the user for another frame of the same angle from the shoot. On Blush, Front-Full 220 was blocked 6 times; frame 224 (hands behind the back) passed on the first try.
+   - On Blush, Front-Full 220 was blocked 6 times; frame 224 (hands behind the back) passed on the first try.
 - **Never use `nano_banana_pro` (Gemini) for RETOUCH.** It passes the filter but does not reshape the body, so it fails QA item 3.
 - Don't move on to the BG step until all 5 angles have a GPT retouch that passes QA.
 
