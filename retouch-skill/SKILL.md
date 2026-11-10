@@ -6,7 +6,7 @@ version: 0.1
 
 # Retouch skill — v0.1
 
-> **v0.1:** tested on 5 sets: Gold Clara × Claire, Pink Clara × Kristy, Camo Lunar × Claire, Blush Iva Mini Dress × Kristy and Sienna Maxi Dress × Claire, 5 angles each. See "Known gaps" before trusting a run without looking at it.
+> **v0.1:** tested on 5 sets: Gold Clara × Claire, Pink Clara × Kristy, Camo Lunar × Claire, Blush Iva Mini Dress × Kristy, Sienna Maxi Dress × Claire and Midnight Valen Maxi Dress × Kristy, 5 angles each. See "Known gaps" before trusting a run without looking at it.
 
 Pipeline: preflight → intake → **Checkpoint 1 RETOUCH** → QA → **Checkpoint 2 BG SWAP** → measure → fallbacks (only when needed) → deliver to folders.
 Everything needed is in this file; the scripts are in the appendix. Reply in the user's language (casual Thai by default) with English technical terms. Show images, keep text short.
@@ -126,6 +126,7 @@ Cut-out or very short garments can be blocked. Seen on Blush Iva Mini Dress (mid
 2. Try `gpt_image_2_6` (role `image_references`, same prompt).
 3. Still blocked: ask the user for another frame of the same angle. If the user gives several Front-Full options up front, run them all in the first batch and keep the best (Sienna: 3 options, 3 passed, kept the straight front).
    - On Blush, Front-Full 220 was blocked 6 times; frame 224 (hands behind the back) passed on the first try.
+- **BG SWAP can be blocked too** (Midnight Front-Full, cut-out maxi). Retry `nano_banana_pro` with the same inputs; 2 retries both passed.
 - **Never use `nano_banana_pro` (Gemini) for RETOUCH.** It passes the filter but does not reshape the body, so it fails QA item 3.
 - Don't move on to the BG step until all 5 angles have a GPT retouch that passes QA.
 
@@ -188,7 +189,7 @@ Run `measure.py bgswap.png BG_Ref.png` on every output. It prints the wall colou
 - Keep the raw output of any fixed image in `99_Test/bg-raw`.
 - Add a row to the log: set, angle, wall, seam, fix.
 
-So far, over 5 sets and 25 images: A was needed on 10, B on 2, and a rerun on 1, so expect both to come up in most sets.
+So far, over 6 sets and 30 images: A was needed on 11, B on 2, and a rerun on 1, so expect both to come up in most sets.
 
 ## Deliver
 ```
