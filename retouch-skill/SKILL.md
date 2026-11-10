@@ -6,7 +6,7 @@ version: 0.1
 
 # Retouch skill — v0.1
 
-> **v0.1:** tested on 2 sets only: Gold Clara Set × Claire and Pink Clara Set × Kristy, 5 angles each. See "Known gaps" before trusting a run without looking at it.
+> **v0.1:** tested on 3 sets: Gold Clara × Claire, Pink Clara × Kristy and Camo Lunar × Claire, 5 angles each. See "Known gaps" before trusting a run without looking at it.
 
 Pipeline: preflight → intake → **Checkpoint 1 RETOUCH** → QA → **Checkpoint 2 BG SWAP** → measure → fallbacks (only when needed) → deliver to folders.
 Everything needed is in this file; the scripts are in the appendix. Reply in the user's language (casual Thai by default) with English technical terms. Show images, keep text short.
@@ -98,14 +98,19 @@ ONE photograph. Maximum resolution.
 </Output>
 ```
 
-### Close-up: auto-crop (always)
+### Close-up: faceless crop (always)
+The Close-up must end up **faceless**: the frame top cuts at the lips, so the face doesn't show.
+- **If the original is already faceless:** run `autocrop.py` as below.
+- **If the original shows the whole face** (often marked in the file name, e.g. "please crop to close up"): retouch it as is, since a visible face swaps more reliably. Then crop the retouch at 2:3 with the top at the lips and the bottom at the original bottom, centred on the subject.
+
+### Close-up: auto-crop
 The original cuts the head off, but the prompt needs the head: for the face swap, and because the body is measured in head-lengths from the top of the head. So the model zooms out to show the face.
 
 Fix: run `autocrop.py original.jpg retouch.png out.png`. It aligns the garment's top edge (neckline) and bottom edge (hem) with the original, at the original's aspect ratio. Keep the uncropped render in `99_Test`.
 
 ### QA after RETOUCH (Claude looks, then the user approves)
 1. **Face.** Zoom into every face and compare it with the sheet. The face must be the character, not the original model. This is the most common failure, and it is easy to miss on a small contact sheet.
-2. **Hair.** The model can copy the original's hairstyle, e.g. a ponytail.
+2. **Hair.** The model can copy the original's hairstyle, e.g. a ponytail. **A copied hairstyle is a fail even when the shot will be cropped faceless.** Don't accept it because "the face gets cropped anyway"; rerun it with the face crop.
 3. **Garment:** pattern, neckline and hem match the original. **Shoes** match the original.
 4. **Framing** matches the original; for the Close-up, after the auto-crop.
 
@@ -168,11 +173,12 @@ The beige floor band has the **same height in every angle, Close-up included**. 
 ### Measure every output, then fix only what is off
 Run `measure.py bgswap.png BG_Ref.png` on every output. It prints the wall colour, the seam height and the fix needed:
 - **A: wall colour off** (more than 6 levels in any channel). Run `bgmatch.py`. It shifts the wall and floor colours to BG_Ref, outside the subject only, using a rembg mask.
+- **RERUN: no wall.** The whole backdrop came out floor-coloured. It happened once, on Camo 3-4-Side. Re-roll the BG SWAP for that image; one re-roll fixed it.
 - **B: seam off** (more than ±2% of frame height). Run `floorline.py`. It repaints the wall and floor so the seam sits at BG_Ref's height, then puts the subject back on top.
 - Keep the raw output of any fixed image in `99_Test/bg-raw`.
 - Add a row to the log: set, angle, wall, seam, fix.
 
-So far: A was needed on 5 of 10 images and B on 2 of 10, so expect both to come up in most sets.
+So far, over 3 sets and 15 images: A was needed on 7, B on 2, and a rerun on 1, so expect both to come up in most sets.
 
 ## Deliver
 ```
@@ -186,7 +192,7 @@ RETOUCH\[Dress-Name]\
 End with one line per angle (pass, or what was fixed) and the credits used.
 
 ## Known gaps (v0.1)
-- Not tested yet on dark or saturated garments, or on long dresses and skirts. `autocrop.py` and the seam detection may fail on those; check those outputs by eye.
+- Not tested yet on dark or saturated garments. Long trousers (Camo) passed RETOUCH and BG SWAP; auto-crop wasn't needed there, because that Close-up was a manual faceless crop.
 - `bgmatch.py` and `floorline.py` only work on a flat studio backdrop of two colours, like BG_Ref.
 - Face QA still needs human eyes.
 - The scripts are separate, not one runner yet.
@@ -244,7 +250,7 @@ r.crop((left, top, left + cw, top + ch)).save(sys.argv[3])
 ### `measure.py`
 ```python
 """Measure a BG-swap output against BG_Ref: wall colour (outside the subject) and wall/floor seam height.
-Prints which fallback is needed. usage: measure.py bgswap.png bg_ref.png  [wall_tol=6] [seam_tol=0.02]"""
+Prints which fallback is needed, or RERUN if the backdrop has no wall. usage: measure.py bgswap.png bg_ref.png  [wall_tol=6] [seam_tol=0.02]"""
 import sys, numpy as np
 from PIL import Image
 from rembg import remove, new_session
@@ -258,7 +264,10 @@ REFWALL = np.median(ref[:int(ref.shape[0] * rs * 0.85)].reshape(-1, 3), 0)
 img = Image.open(p).convert('RGB'); o = np.asarray(img).astype(float)
 bg = np.asarray(remove(img, session=new_session('isnet-general-use'), only_mask=True)) < 10
 floor = (o[:, :, 0] - o[:, :, 2] > 12) & (o.mean(2) < 225)
-wall = np.median(o[bg & ~floor], 0); s = seam(o)
+s = seam(o)
+if (bg & ~floor).sum() < 1000 or (s is not None and s < 0.3):
+    print(f'NO WALL: backdrop came out floor-coloured (seam {None if s is None else round(s*100,1)}%)  fix: RERUN'); sys.exit()
+wall = np.median(o[bg & ~floor], 0)
 need = []
 if np.abs(wall - REFWALL).max() > WT: need.append('A')
 if s is None or abs(s - rs) > ST: need.append('B')

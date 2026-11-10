@@ -1,5 +1,5 @@
 """Measure a BG-swap output against BG_Ref: wall colour (outside the subject) and wall/floor seam height.
-Prints which fallback is needed. usage: measure.py bgswap.png bg_ref.png  [wall_tol=6] [seam_tol=0.02]"""
+Prints which fallback is needed, or RERUN if the backdrop has no wall. usage: measure.py bgswap.png bg_ref.png  [wall_tol=6] [seam_tol=0.02]"""
 import sys, numpy as np
 from PIL import Image
 from rembg import remove, new_session
@@ -13,7 +13,10 @@ REFWALL = np.median(ref[:int(ref.shape[0] * rs * 0.85)].reshape(-1, 3), 0)
 img = Image.open(p).convert('RGB'); o = np.asarray(img).astype(float)
 bg = np.asarray(remove(img, session=new_session('isnet-general-use'), only_mask=True)) < 10
 floor = (o[:, :, 0] - o[:, :, 2] > 12) & (o.mean(2) < 225)
-wall = np.median(o[bg & ~floor], 0); s = seam(o)
+s = seam(o)
+if (bg & ~floor).sum() < 1000 or (s is not None and s < 0.3):
+    print(f'NO WALL: backdrop came out floor-coloured (seam {None if s is None else round(s*100,1)}%)  fix: RERUN'); sys.exit()
+wall = np.median(o[bg & ~floor], 0)
 need = []
 if np.abs(wall - REFWALL).max() > WT: need.append('A')
 if s is None or abs(s - rs) > ST: need.append('B')
