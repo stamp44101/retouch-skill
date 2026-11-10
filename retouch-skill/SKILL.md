@@ -6,7 +6,7 @@ version: 0.1
 
 # Retouch skill — v0.1
 
-> **v0.1:** tested on 3 sets: Gold Clara × Claire, Pink Clara × Kristy and Camo Lunar × Claire, 5 angles each. See "Known gaps" before trusting a run without looking at it.
+> **v0.1:** tested on 4 sets: Gold Clara × Claire, Pink Clara × Kristy, Camo Lunar × Claire and Blush Iva Mini Dress × Kristy, 5 angles each. See "Known gaps" before trusting a run without looking at it.
 
 Pipeline: preflight → intake → **Checkpoint 1 RETOUCH** → QA → **Checkpoint 2 BG SWAP** → measure → fallbacks (only when needed) → deliver to folders.
 Everything needed is in this file; the scripts are in the appendix. Reply in the user's language (casual Thai by default) with English technical terms. Show images, keep text short.
@@ -111,13 +111,22 @@ Fix: run `autocrop.py original.jpg retouch.png out.png`. It aligns the garment's
 ### QA after RETOUCH (Claude looks, then the user approves)
 1. **Face.** Zoom into every face and compare it with the sheet. The face must be the character, not the original model. This is the most common failure, and it is easy to miss on a small contact sheet.
 2. **Hair.** The model can copy the original's hairstyle, e.g. a ponytail. **A copied hairstyle is a fail even when the shot will be cropped faceless.** Don't accept it because "the face gets cropped anyway"; rerun it with the face crop.
-3. **Garment:** pattern, neckline and hem match the original. **Shoes** match the original.
-4. **Framing** matches the original; for the Close-up, after the auto-crop.
+3. **Body reshape.** Put the original and the retouch side by side. The body must be visibly reshaped: longer legs, narrower waist, slimmer limbs. If the body looks like the original model's, it is a fail even when the face and hair are right.
+4. **Garment:** pattern, neckline and hem match the original. **Shoes** match the original.
+5. **Framing** matches the original; for the Close-up, after the auto-crop.
 
 ### Fallback: wrong face or hair (note, watching)
 Rerun only that angle, with Image 2 = a crop of the sheet's top-left close-up face panel (about x 0–29.8%, y 0–44.5% of the sheet).
 - **3-4-Side failed with the full sheet in both test sets** (ponytail copied in one, original face kept in the other). A re-roll with the full sheet failed again; the face crop passed both times.
 - **Open decision:** use the face crop for 3-4-Side from the start. Not decided yet.
+
+### Fallback: blocked by the content filter (status `nsfw`)
+Cut-out or very short garments can be blocked. Seen on Blush Iva Mini Dress (midriff cut-out): 4 of 5 angles blocked on the first run.
+1. Retry `gpt_image_2` (same inputs). Some angles pass on a retry.
+2. Try `gpt_image_2_6` (role `image_references`, same prompt).
+3. Still blocked: ask the user for another frame of the same angle from the shoot. On Blush, Front-Full 220 was blocked 6 times; frame 224 (hands behind the back) passed on the first try.
+- **Never use `nano_banana_pro` (Gemini) for RETOUCH.** It passes the filter but does not reshape the body, so it fails QA item 3.
+- Don't move on to the BG step until all 5 angles have a GPT retouch that passes QA.
 
 Save the passing shots to `02_READY`. Save a contact sheet to `03_Review`: originals on the top row, retouches below.
 
@@ -178,7 +187,7 @@ Run `measure.py bgswap.png BG_Ref.png` on every output. It prints the wall colou
 - Keep the raw output of any fixed image in `99_Test/bg-raw`.
 - Add a row to the log: set, angle, wall, seam, fix.
 
-So far, over 3 sets and 15 images: A was needed on 7, B on 2, and a rerun on 1, so expect both to come up in most sets.
+So far, over 4 sets and 20 images: A was needed on 8, B on 2, and a rerun on 1, so expect both to come up in most sets.
 
 ## Deliver
 ```
@@ -194,7 +203,8 @@ End with one line per angle (pass, or what was fixed) and the credits used.
 ## Known gaps (v0.1)
 - Not tested yet on dark or saturated garments. Long trousers (Camo) passed RETOUCH and BG SWAP; auto-crop wasn't needed there, because that Close-up was a manual faceless crop.
 - `bgmatch.py` and `floorline.py` only work on a flat studio backdrop of two colours, like BG_Ref.
-- Face QA still needs human eyes.
+- `autocrop.py` failed on Blush satin pink (gave a 212x319 crop). That Close-up was cropped by hand: top at 12.2% of the height, full height down to the bottom, 2:3 width centred.
+- Face and body QA still need human eyes.
 - The scripts are separate, not one runner yet.
 
 ## Appendix — scripts
