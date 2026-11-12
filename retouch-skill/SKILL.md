@@ -17,7 +17,7 @@ Everything needed is in this file; the scripts are in the appendix. Reply in the
   - models, resolution and aspect;
   - media order;
   - the floor-line rule;
-  - the folder layout and file naming.
+  - the file naming, and the folder layout of the chosen delivery mode (see Deliver).
 - **Adaptable:** how files get in and out (device folder, Drive, chat upload), and how the scripts are run.
 - **Fix outputs with code, never by editing the prompt.** The prompts have worked for a long time in Figma Weave; when an output is off, fix it in a script before or after generation.
 
@@ -106,7 +106,7 @@ The Close-up must end up **faceless**: the frame top cuts at the lips, so the fa
 ### Close-up: auto-crop
 The original cuts the head off, but the prompt needs the head: for the face swap, and because the body is measured in head-lengths from the top of the head. So the model zooms out to show the face.
 
-Fix: run `autocrop.py original.jpg retouch.png out.png`. It aligns the garment's top edge (neckline) and bottom edge (hem) with the original, at the original's aspect ratio. Keep the uncropped render in `99_Test`.
+Fix: run `autocrop.py original.jpg retouch.png out.png`. It aligns the garment's top edge (neckline) and bottom edge (hem) with the original, at the original's aspect ratio. Full test mode only: keep the uncropped render in `99_Test`.
 
 ### QA after RETOUCH (Claude looks, then the user approves)
 1. **Face.** Zoom into every face and compare it with the sheet. The face must be the character, not the original model. This is the most common failure, and it is easy to miss on a small contact sheet.
@@ -130,7 +130,7 @@ Cut-out or very short garments can be blocked. Seen on Blush Iva Mini Dress (mid
 - **Never use `nano_banana_pro` (Gemini) for RETOUCH.** It passes the filter but does not reshape the body, so it fails QA item 3.
 - Don't move on to the BG step until all 5 angles have a GPT retouch that passes QA.
 
-Save the passing shots to `02_READY`. Save a contact sheet to `03_Review`: originals on the top row, retouches below.
+Full test mode only: save the passing shots to `02_READY`, and a contact sheet to `03_Review` (originals on the top row, retouches below). In the default mode, keep these in the sandbox and show the contact sheet in chat for QA.
 
 ## Checkpoint 2 — BG SWAP
 1. **Pad first (always).** Run `pad34.py retouch.png padded.png`. It adds flat backdrop-coloured strips to the left and right so the 2:3 retouch becomes 3:4. Without this, the model zooms out to fill 3:4 and the subject shrinks.
@@ -186,12 +186,22 @@ Run `measure.py bgswap.png BG_Ref.png` on every output. It prints the wall colou
 - **A: wall colour off** (more than 6 levels in any channel). Run `bgmatch.py`. It shifts the wall and floor colours to BG_Ref, outside the subject only, using a rembg mask.
 - **RERUN: no wall.** The whole backdrop came out floor-coloured. It happened once, on Camo 3-4-Side. Re-roll the BG SWAP for that image; one re-roll fixed it.
 - **B: seam off** (more than ±2% of frame height). Run `floorline.py`. It repaints the wall and floor so the seam sits at BG_Ref's height, then puts the subject back on top.
-- Keep the raw output of any fixed image in `99_Test/bg-raw`.
+- Full test mode only: keep the raw output of any fixed image in `99_Test/bg-raw`.
 - Add a row to the log: set, angle, wall, seam, fix.
 
 So far, over 6 sets and 30 images: A was needed on 11, B on 2, and a rerun on 1, so expect both to come up in most sets.
 
 ## Deliver
+Two modes. **Default is Output.** Use Full test only when the user asks for it ("แบบทดสอบเต็ม", "full test").
+
+### Default: Output
+Write only the 5 final BG images into one folder inside the dress folder. Leave the originals where they are.
+```
+[Dress folder]\
+  Output\        [Dress]_[Character]_[Angle]_BG.png   (final, 3:4) x5
+```
+
+### Full test (only on request)
 ```
 RETOUCH\[Dress-Name]\
   01_Original\   originals
